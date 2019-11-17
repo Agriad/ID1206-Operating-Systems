@@ -1,0 +1,1 @@
+cmd_/home/justin/Desktop/ID1206_Operativsystem/Assignment_4/skynet/skynet.mod := { echo  /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/skynet/skynet.o; echo; } > /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/skynet/skynet.mod

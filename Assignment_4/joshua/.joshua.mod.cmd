@@ -1,0 +1,1 @@
+cmd_/home/justin/Desktop/ID1206_Operativsystem/Assignment_4/joshua/joshua.mod := { echo  /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/joshua/joshua.o; echo; } > /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/joshua/joshua.mod

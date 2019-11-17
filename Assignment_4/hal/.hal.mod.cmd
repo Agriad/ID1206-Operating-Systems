@@ -1,0 +1,1 @@
+cmd_/home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.mod := { echo  /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.o; echo; } > /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.mod

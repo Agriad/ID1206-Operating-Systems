@@ -1,0 +1,1 @@
+cmd_/home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.ko /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.o /home/justin/Desktop/ID1206_Operativsystem/Assignment_4/hal/hal.mod.o ;  true
