@@ -15,5 +15,6 @@ int main()
     sanity();
     dalloc(14);
     sanity();
+
     return 0;
 }

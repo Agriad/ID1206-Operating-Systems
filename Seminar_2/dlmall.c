@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <unistd.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -110,12 +111,14 @@ void detach(struct head *block)
             flist = block -> next;
         }
         struct head *next_head = block -> next;
-        next_head -> prev = block -> prev;     
+        next_head -> prev = block -> prev;
+        block -> next = NULL;     
     }
     if (block -> prev != NULL)
     {
         struct head *prev_head = block -> prev;
         prev_head -> next = block -> next;
+        block -> prev = NULL;
     }    
     else
     {
@@ -237,6 +240,7 @@ int sanity()
         printf("flist: %d, is free: %d, size: %d\n", flist_counter, free, size);
         flist_counter++;
         pointer = pointer -> next;
+        //sleep(1);
     }
 
     //arena
