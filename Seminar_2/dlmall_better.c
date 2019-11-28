@@ -123,19 +123,50 @@ void detach(struct head *block)
 
 void insert(struct head *block)
 {
-    block -> next = flist;
-    block -> prev = NULL;
-    if(flist != NULL)
+    if (flist == NULL)
     {
-        flist -> prev = block;
+        flist = block;
     }
-    flist = block;
+    else
+    {
+        struct head *flist_pointer = flist;
+        while (block > flist_pointer)
+        {
+            if (flist_pointer -> next == NULL)
+            {
+                break;
+            }
+            else
+            {
+                flist_pointer = flist_pointer -> next;
+            }
+        }
+
+        struct head *ablock = flist_pointer -> next;
+        struct head *bblock = flist_pointer -> prev;
+
+        block -> next = ablock;
+        block -> prev = bblock;
+
+        if (ablock != NULL)
+        {
+            ablock -> prev = block;
+        }
+        if (bblock != NULL)
+        {
+            bblock -> next = block;
+        }
+        if (flist_pointer -> prev = NULL)
+        {
+            flist = block;
+        }
+    }
 }
 
 int adjust(int request)
 {
     int size = ALIGN;
-    if(request < size)
+    if( request < size)
     {
         return size;
     }
@@ -191,37 +222,6 @@ struct head *merge(struct head *block)
 {
     struct head *aft = after(block);
 
-    if (block -> bfree && block != arena)
-    {
-        struct head *bblock = before(block);
-        int total_size = bblock -> size + block -> size + HEAD;
-        struct head *ablock = after(block);
-        detach(block);
-        bblock -> size = total_size;
-
-        if (ablock -> size != 0)
-        {
-            ablock -> bsize = total_size;
-        }
-
-        block = merge(bblock);
-    }
-
-    if (aft -> free)
-    {
-        struct head *ablock = after(block);
-        int total_size = block -> size + ablock -> size + HEAD;
-        struct head *aablock = after(ablock);
-        detach(ablock);
-        block -> size = total_size;
-
-        if (aablock != NULL)
-        {
-            aablock -> bsize = total_size;
-        }
-
-        block = merge(ablock);
-    }
 
     return block;
 }

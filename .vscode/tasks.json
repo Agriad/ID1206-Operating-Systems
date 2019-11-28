@@ -10,7 +10,7 @@
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "${fileDirname}/dlmall.h",
-                "${fileDirname}/dlmall.c"
+                "${fileDirname}/dlmall_better.c"
             ],
             "options": {
                 "cwd": "/usr/bin"
