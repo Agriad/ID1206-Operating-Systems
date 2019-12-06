@@ -29,7 +29,7 @@ int main()
     sanity();
     */
 
-
+   /*
     printf("dalloc 100\n");
     void *mem = dalloc(100);
     sanity();
@@ -60,6 +60,7 @@ int main()
     printf("pfree 300\n");
     pfree(mem4);
     sanity();
+    */
 
     return 0;
 }
