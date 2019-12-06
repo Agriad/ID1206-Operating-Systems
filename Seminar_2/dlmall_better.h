@@ -5,10 +5,8 @@ void *dalloc(size_t request);
 
 void pfree(void *memory);
 
-struct head *new();
+struct taken *new();
 
-void insert(struct head *block);
+void insert(struct taken *block);
 
-void sanity();
-
-void another_data();
+int sanity();

@@ -123,19 +123,50 @@ void detach(struct head *block)
 
 void insert(struct head *block)
 {
-    block -> next = flist;
-    block -> prev = NULL;
-    if(flist != NULL)
+    if (flist == NULL)
     {
-        flist -> prev = block;
+        flist = block;
     }
-    flist = block;
+    else
+    {
+        struct head *flist_pointer = flist;
+        while (block > flist_pointer)
+        {
+            if (flist_pointer -> next == NULL)
+            {
+                break;
+            }
+            else
+            {
+                flist_pointer = flist_pointer -> next;
+            }
+        }
+
+        struct head *ablock = flist_pointer -> next;
+        struct head *bblock = flist_pointer -> prev;
+
+        block -> next = ablock;
+        block -> prev = bblock;
+
+        if (ablock != NULL)
+        {
+            ablock -> prev = block;
+        }
+        if (bblock != NULL)
+        {
+            bblock -> next = block;
+        }
+        if (flist_pointer -> prev = NULL)
+        {
+            flist = block;
+        }
+    }
 }
 
 int adjust(int request)
 {
     int size = ALIGN;
-    if(request < size)
+    if( request < size)
     {
         return size;
     }
@@ -187,43 +218,43 @@ struct head *find(int size)
     return find_space(size, flist);
 }
 
-struct head *merge(struct head *block)
+void merge()
 {
-    struct head *aft = after(block);
+    struct head *flist_pointer = flist;
+    struct head *arena_pointer = flist;
 
-    if (block -> bfree && block != arena)
+    while (arena_pointer -> size != 0)
     {
-        struct head *bblock = before(block);
-        int total_size = bblock -> size + block -> size + HEAD;
-        struct head *ablock = after(block);
-        detach(block);
-        bblock -> size = total_size;
+        struct head *aflist_pointer;
+        struct head *aarena_pointer = after(arena_pointer);
 
-        if (ablock -> size != 0)
+        if (flist_pointer != NULL)
         {
-            ablock -> bsize = total_size;
+            struct head *aflist_pointer = flist_pointer -> next;
+        }
+        if (aflist_pointer == aarena_pointer)
+        {
+            int total_size = HEAD + aflist_pointer -> size + flist_pointer -> size;
+            detach(aflist_pointer);
+            flist_pointer -> size = total_size;
+
+            if (aflist_pointer -> next != NULL)
+            {
+                aflist_pointer -> next -> bsize = total_size;
+            }
         }
 
-        block = merge(bblock);
-    }
-
-    if (aft -> free)
-    {
-        struct head *ablock = after(block);
-        int total_size = block -> size + ablock -> size + HEAD;
-        struct head *aablock = after(ablock);
-        detach(ablock);
-        block -> size = total_size;
-
-        if (aablock != NULL)
+        if (flist_pointer != NULL)
         {
-            aablock -> bsize = total_size;
+            flist_pointer = flist_pointer -> next;
         }
-
-        block = merge(ablock);
+        else
+        {
+            break;
+        }
+        
+        arena_pointer = aarena_pointer;
     }
-
-    return block;
 }
 
 void *dalloc(size_t request)
@@ -254,7 +285,7 @@ void pfree(void *memory)
         block -> free = TRUE;
         insert(block);
         // merge section
-        //merge(block);
+        //merge();
         // merge section done
     }
     return;
@@ -300,68 +331,4 @@ void sanity()
     int arena_bfree = arena_pointer -> bfree;
     int arena_bsize = arena_pointer -> bsize;
     printf("sentinel: free: %d, address %p, size: %d, bfree: %d, bsize: %d\n", arena_free, arena_pointer, arena_size, arena_bfree, arena_bsize);
-}
-
-/*
-int *data()
-{
-    // flist
-    int flist_counter = 0;
-    struct head *pointer = flist;
-    while (pointer != NULL)
-    {
-        int free = pointer -> free;
-        int size = pointer -> size;
-        flist_counter++;
-        pointer = pointer -> next;
-    }
-
-    int arena_counter = 0;
-    struct head *arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-    }
-
-    int data1[arena_counter + 1];
-    int data[2];
-    data[0] = arena_counter;
-    data[1] = data1;
-
-    arena_counter = 0;
-    arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        data1[arena_counter] = arena_size;
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-    }
-
-    return *data;
-}
-*/
-
-void another_data()
-{
-    int arena_counter = 0;
-    struct head *arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        printf("%d\n", arena_size);
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-    }
 }

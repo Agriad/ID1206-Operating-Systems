@@ -8,9 +8,7 @@
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}",
-                "${fileDirname}/dlmall.h",
-                "${fileDirname}/dlmall.c"
+                "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {
                 "cwd": "/usr/bin"

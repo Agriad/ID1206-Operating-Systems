@@ -35,24 +35,6 @@ struct head *before(struct head *block)
     return (struct head*)((char *) (block) - block -> bsize - HEAD);
 }
 
-// split -> old
-struct head *split(struct head *block, int size)
-{
-    int rsize = (block -> size) - size - HEAD;
-    block -> size = rsize; 
-
-    struct head *splt = after(block);
-    splt -> bsize = rsize;
-    splt -> bfree = TRUE;
-    splt -> size = size;
-    splt -> free = FALSE;
-
-    struct head *aft = after(splt);
-    aft -> bsize = rsize;
-
-    return splt;
-}
-
 struct head *arena = NULL;
 
 struct head *new()
@@ -98,6 +80,49 @@ struct head *new()
 
 struct head *flist;
 
+void sanity()
+{
+    printf(" --- SANITY CHECK STARTING ---\n");
+    // flist
+    int flist_counter = 0;
+    struct head *pointer = flist;
+    while (pointer != NULL)
+    {
+        int free = pointer -> free;
+        int size = pointer -> size;
+        printf("flist: %d, address %p, is free: %d, size: %d\n", flist_counter, pointer, free, size);
+        flist_counter++;
+        pointer = pointer -> next;
+        if (flist_counter % 10 == 0)
+        {
+            //sleep(1);
+        }
+    }
+
+    int arena_counter = 0;
+    struct head *arena_pointer = arena;
+    while (arena_pointer -> size != 0)
+    {
+        int arena_free = arena_pointer -> free;
+        int arena_size = arena_pointer -> size;
+        int arena_bfree = arena_pointer -> bfree;
+        int arena_bsize = arena_pointer -> bsize;
+        printf("arena: free: %d, address %p, size: %d, bfree: %d, bsize: %d\n", arena_free, arena_pointer, arena_size, arena_bfree, arena_bsize);
+        arena_pointer = after(arena_pointer);
+        arena_counter++;
+        if (arena_counter % 10 == 0)
+        {
+            //sleep(1);
+        }
+    }
+    int arena_free = arena_pointer -> free;
+    int arena_size = arena_pointer -> size;
+    int arena_bfree = arena_pointer -> bfree;
+    int arena_bsize = arena_pointer -> bsize;
+    printf("sentinel: free: %d, address %p, size: %d, bfree: %d, bsize: %d\n", arena_free, arena_pointer, arena_size, arena_bfree, arena_bsize);
+}
+
+
 void detach(struct head *block)
 {
     block -> free = FALSE;
@@ -114,22 +139,131 @@ void detach(struct head *block)
     {
         struct head *prev_head = block -> prev;
         prev_head -> next = block -> next;
-    }    
-    else
+    }
+    if (block -> prev == NULL && block -> next == NULL)
     {
-        flist == NULL;
+        flist = NULL;
     }
 }
 
 void insert(struct head *block)
 {
-    block -> next = flist;
-    block -> prev = NULL;
-    if(flist != NULL)
+    block -> free = TRUE;
+    if (flist == NULL)
     {
-        flist -> prev = block;
+        block -> free = TRUE;
+        flist = block;
+        block -> next = NULL;
+        block -> prev = NULL;
     }
-    flist = block;
+    else
+    {
+        int counter = 0;
+        struct head *flist_pointer = flist;
+        int block_size = block -> size;
+        int flist_pointer_size = flist -> size;
+
+        struct head *flist_other = flist;
+
+        /*
+        while(flist_other -> next != NULL)
+        {
+            counter++;
+        }
+        */
+
+        // smallest first
+        //while (block_size > flist_pointer_size && flist_pointer -> next != NULL)
+        while (block_size < flist_pointer_size && flist_pointer -> next != NULL)
+        {
+            flist_pointer = flist_pointer -> next;            
+            flist_pointer_size = flist_pointer -> size;
+            counter++;
+        }
+
+        /*
+        if (block_size > flist_pointer_size && counter < 2)
+        {
+            flist_pointer -> next = block;
+            flist_pointer -> prev = NULL;
+            block -> prev = flist_pointer;
+            block -> next = NULL;
+            flist = flist_pointer;
+            return;
+        }  
+        */
+
+        /*
+        if (block_size > flist_pointer_size)
+        {
+            flist_pointer -> next = block;
+            flist_pointer -> prev = NULL;
+            block -> prev = flist_pointer;
+            block -> next = NULL;
+            flist = flist_pointer;
+            return;
+        }
+        */
+        
+        
+        struct head *bflist_pointer = flist_pointer -> prev;
+        block -> next = flist_pointer;
+        block -> prev = bflist_pointer;
+        flist_pointer -> prev = block;
+
+        if (bflist_pointer != NULL)
+        {
+            bflist_pointer -> next = block;
+        }
+        else
+        {
+            flist = block;
+        }
+    }
+}
+
+/*
+void sort()
+{
+    struct head *flist_pointer = flist;
+    struct head *bflist_pointer = flist;
+
+    if (flist_pointer -> next != NULL)
+    {
+        while (flist_pointer -> size < flist_pointer -> next -> size)
+        {
+            flist_pointer = flist_pointer -> next;
+            bflist_pointer = flist_pointer;
+        }
+
+        if (flist_pointer -> next != NULL)
+        {
+            bli
+        }
+        
+    }
+}
+*/
+
+// split -> old
+struct head *split(struct head *block, int size)
+{
+    int rsize = (block -> size) - size - HEAD;
+    block -> size = rsize; 
+
+    struct head *splt = after(block);
+    splt -> bsize = rsize;
+    splt -> bfree = TRUE;
+    splt -> size = size;
+    splt -> free = FALSE;
+
+    struct head *aft = after(splt);
+    aft -> bsize = rsize;
+
+    detach(block);
+    insert(block);
+
+    return splt;
 }
 
 int adjust(int request)
@@ -259,96 +393,6 @@ void pfree(void *memory)
     }
     return;
 }
-
-void sanity()
-{
-    printf(" --- SANITY CHECK STARTING ---\n");
-    // flist
-    int flist_counter = 0;
-    struct head *pointer = flist;
-    while (pointer != NULL)
-    {
-        int free = pointer -> free;
-        int size = pointer -> size;
-        printf("flist: %d, address %p, is free: %d, size: %d\n", flist_counter, pointer, free, size);
-        flist_counter++;
-        pointer = pointer -> next;
-        if (flist_counter % 10 == 0)
-        {
-            //sleep(1);
-        }
-    }
-
-    int arena_counter = 0;
-    struct head *arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        printf("arena: free: %d, address %p, size: %d, bfree: %d, bsize: %d\n", arena_free, arena_pointer, arena_size, arena_bfree, arena_bsize);
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-        if (arena_counter % 10 == 0)
-        {
-            //sleep(1);
-        }
-    }
-    int arena_free = arena_pointer -> free;
-    int arena_size = arena_pointer -> size;
-    int arena_bfree = arena_pointer -> bfree;
-    int arena_bsize = arena_pointer -> bsize;
-    printf("sentinel: free: %d, address %p, size: %d, bfree: %d, bsize: %d\n", arena_free, arena_pointer, arena_size, arena_bfree, arena_bsize);
-}
-
-/*
-int *data()
-{
-    // flist
-    int flist_counter = 0;
-    struct head *pointer = flist;
-    while (pointer != NULL)
-    {
-        int free = pointer -> free;
-        int size = pointer -> size;
-        flist_counter++;
-        pointer = pointer -> next;
-    }
-
-    int arena_counter = 0;
-    struct head *arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-    }
-
-    int data1[arena_counter + 1];
-    int data[2];
-    data[0] = arena_counter;
-    data[1] = data1;
-
-    arena_counter = 0;
-    arena_pointer = arena;
-    while (arena_pointer -> size != 0)
-    {
-        int arena_free = arena_pointer -> free;
-        int arena_size = arena_pointer -> size;
-        int arena_bfree = arena_pointer -> bfree;
-        int arena_bsize = arena_pointer -> bsize;
-        data1[arena_counter] = arena_size;
-        arena_pointer = after(arena_pointer);
-        arena_counter++;
-    }
-
-    return *data;
-}
-*/
 
 void another_data()
 {

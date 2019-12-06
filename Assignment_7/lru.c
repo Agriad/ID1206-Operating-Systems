@@ -69,6 +69,47 @@ int simulate(int *seq, pte *table, int refs, int frms, int pgs)
             hits++;
 
             /* unlink entry and place last */
+            
+            if (last == entry)
+            {
+
+            }
+            else if (first == entry)
+            {
+                first = entry -> next;
+
+                if (entry -> next != NULL)
+                {
+                    entry -> next -> prev = NULL;
+                }
+
+                entry -> next = NULL;
+                entry -> prev = last;
+
+                if (last != first)
+                {
+                    last -> next = entry;
+                }
+
+                last = entry;
+            }
+            else
+            {
+                if (entry -> next != NULL)
+                {
+                    entry -> next -> prev = entry -> prev;
+                }
+                if (entry -> prev != NULL)
+                {
+                    entry -> prev -> next = entry -> next;
+                }
+
+                entry -> next = NULL;
+                entry -> prev = last;
+                last = entry;
+
+            }
+  
         }
         else
         {
@@ -80,6 +121,18 @@ int simulate(int *seq, pte *table, int refs, int frms, int pgs)
                 entry -> next = NULL;
 
                 /* place entry last */
+
+                if (last == NULL)
+                {
+                    last = entry;
+                }
+                else
+                {
+                    last -> next = entry;
+                    entry -> prev = last;
+                    entry -> next = NULL;
+                    last = entry;
+                }
             }
             else
             {
@@ -95,6 +148,18 @@ int simulate(int *seq, pte *table, int refs, int frms, int pgs)
                 entry -> next = NULL;
 
                 /* place entry last */
+
+                if (last == NULL)
+                {
+                    last = evict;
+                }
+                else
+                {
+                    last -> next = evict;
+                    evict -> prev = last;
+                    evict -> next = NULL;
+                    last = evict;
+                }
             }
         }
     }
