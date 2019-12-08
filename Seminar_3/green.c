@@ -10,7 +10,7 @@
 
 static ucontext_t main_cntx = {0};
 //static green_t main_green = {&main_cntx, NULL, ... FALSE};
-static green_t main_green = {&main_cntx, NULL, FALSE};
+static green_t main_green = {&main_cntx, NULL, NULL, NULL, NULL, NULL, FALSE};
 
 static green_t *running = &main_green;
 
@@ -18,7 +18,7 @@ static void init() __attribute__((constructor));
 
 void init()
 {
-    getcontext(&main_green);
+    getcontext(&main_cntx);
 }
 
 green_t *ready_first;
@@ -68,18 +68,23 @@ green_t *ready_list_remove()
 // closes the memory that the thread is using as it finished it's work
 void complete_thread(green_t *thread)
 {
-    
+    ucontext_t *cntx = thread -> context;
+    free(cntx -> uc_stack.ss_sp);
 }
 
 void *green_thread()
 {
     green_t *this = running;
 
+    // segmentation fault
     void *result = (*this -> fun)(this -> arg);
 
     // place waiting (joining) thread in ready queue
     // we use join as a a storage to see who is waiting for us
-    ready_list_add(this -> join);
+    if (this -> join != NULL)
+    {
+        ready_list_add(this -> join);
+    }
 
     // save result of execution
     this -> retval = result;
@@ -103,7 +108,7 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
 
     cntx -> uc_stack.ss_sp = stack;
     cntx -> uc_stack.ss_size = STACK_SIZE;
-    makecontext(cntx, green_thread(), 0);
+    makecontext(cntx, green_thread, 0);
 
     new -> context = cntx;
     new -> fun = fun;
@@ -156,3 +161,15 @@ int green_join(green_t *thread, void **res)
 
     return 0;
 }
+
+/*
+
+A calls green_thread()
+    B waits for A
+    B takes A -> retval
+A -> join = B
+
+greenjoin(A)
+    initialize A -> join = B
+
+*/
