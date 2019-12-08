@@ -15,7 +15,8 @@ green_t;
 
 typedef struct green_cond_t
 {
-    struct green_t *next;
+    green_t *suspend_first;
+    green_t *suspend_last;
 }
 
 green_cond_t;
@@ -24,6 +25,6 @@ int green_create(green_t *thread, void *(*fun)(void*), void *arg);
 int green_yield();
 int green_join(green_t *thread, void** val);
 
-void green_cond_init(green_cond_t*);
-void green_cond_wait(green_cond_t*);
-void green_cond_signal(green_cond_t*);
+void green_cond_init(green_cond_t *thread);
+void green_cond_wait(green_cond_t *thread);
+void green_cond_signal(green_cond_t *thread);

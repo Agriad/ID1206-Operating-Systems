@@ -70,6 +70,7 @@ void complete_thread(green_t *thread)
 {
     ucontext_t *cntx = thread -> context;
     free(cntx -> uc_stack.ss_sp);
+    free(cntx);
 }
 
 void *green_thread()
@@ -160,6 +161,67 @@ int green_join(green_t *thread, void **res)
     complete_thread(thread);
 
     return 0;
+}
+
+void green_cond_init(green_cond_t *condition)
+{
+    green_cond_t *new_green_cond_t;
+    condition = new_green_cond_t;
+}
+
+void green_cond_wait(green_cond_t *condition)
+{
+    green_t *to_suspend = running;
+    green_t *green_thread = condition -> suspend_last;
+
+    if (green_thread == NULL)
+    {
+        condition -> suspend_first = to_suspend;
+    }
+    else
+    {
+        condition -> suspend_last -> next = to_suspend;
+    }
+
+    condition -> suspend_last = to_suspend;
+    to_suspend -> next = NULL;
+    green_yield();
+}
+
+void green_cond_signal(green_cond_t *condition)
+{
+    green_t *green_thread = condition -> suspend_first;
+
+    if (green_thread != NULL)
+    {
+        if (green_thread -> next == NULL)
+        {
+            condition -> suspend_first = NULL;
+            condition -> suspend_last = NULL;
+        }
+        else
+        {
+            condition -> suspend_first = green_thread -> next;
+        }
+
+        green_thread -> next = NULL;
+        ready_list_add(green_thread);
+    }
+
+    /*
+    if (green_thread -> next == NULL)
+    {
+        condition -> suspend_first = NULL;
+        condition -> suspend_last = NULL;
+    }
+    else
+    {
+        condition -> suspend_first = green_thread -> next;
+    }
+
+    green_thread -> next = NULL;
+    ready_list_add(green_thread);
+    */
 }
 
 /*
