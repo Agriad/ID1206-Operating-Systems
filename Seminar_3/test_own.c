@@ -1,26 +1,22 @@
 #include <stdio.h>
 #include "green.h"
 
-int flag = 0;
-green_cond_t cond;
+int counter = 0;
 
 void *test(void *arg)
 {
-    int id = *(int*)arg;
-    int loop = 1000;
+    int i = *(int*)arg;
+    int loop = 100000;
     while (loop > 0)
     {
-        if (flag == id)
+        printf("thread %d: %d\n", i, loop);
+        loop--;
+        counter++;
+        if (loop % 100 == 0)
         {
-            printf("thread %d: %d\n", id, loop);
-            loop--;
-            flag = (id + 1) % 2;
-            green_cond_signal(&cond);
+            green_yield();
         }
-        else
-        {
-            green_cond_wait(&cond);
-        }
+        
     }
 }
 
@@ -29,12 +25,12 @@ int main()
     green_t g0, g1;
     int a0 = 0;
     int a1 = 1;
-    green_cond_init(&cond);
     green_create(&g0, test, &a0);
     green_create(&g1, test, &a1);
 
     green_join(&g0, NULL);
     green_join(&g1, NULL);
+    printf("counter: %d\n", counter);
     printf("done\n");
     return 0;
 }

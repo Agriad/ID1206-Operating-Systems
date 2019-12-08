@@ -1,15 +1,12 @@
 #include <stdlib.h>
 #include <ucontext.h>
 #include <assert.h>
-#include <signal.h>
-#include <sys/time.h>
 #include "green.h"
 
 #define FALSE 0
 #define TRUE 1
 
 #define STACK_SIZE 4096
-#define PERIOD 100
 
 static ucontext_t main_cntx = {0};
 //static green_t main_green = {&main_cntx, NULL, ... FALSE};
@@ -17,9 +14,12 @@ static green_t main_green = {&main_cntx, NULL, NULL, NULL, NULL, NULL, FALSE};
 
 static green_t *running = &main_green;
 
-static sigset_t block;
+static void init() __attribute__((constructor));
 
-void timer_handler(int);
+void init()
+{
+    getcontext(&main_cntx);
+}
 
 green_t *ready_first;
 green_t *ready_last;
@@ -73,7 +73,7 @@ void complete_thread(green_t *thread)
     free(cntx);
 }
 
-void green_thread()
+void *green_thread()
 {
     green_t *this = running;
 
@@ -84,9 +84,7 @@ void green_thread()
     // we use join as a a storage to see who is waiting for us
     if (this -> join != NULL)
     {
-        sigprocmask(SIG_BLOCK, &block, NULL);
         ready_list_add(this -> join);
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
 
     // save result of execution
@@ -96,9 +94,7 @@ void green_thread()
     this -> zombie = TRUE;
 
     // find the next thread to run
-    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *next  = ready_list_remove();
-    sigprocmask(SIG_UNBLOCK, &block, NULL);
 
     running = next;
     setcontext(next -> context);
@@ -124,16 +120,13 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
     new -> zombie = FALSE;
 
     // add new to the ready queue
-    sigprocmask(SIG_BLOCK, &block, NULL);
     ready_list_add(new);
-    sigprocmask(SIG_UNBLOCK, &block, NULL);
 
     return 0;
 }
 
 int green_yield()
 {
-    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *susp = running;
     // add susp to ready queue
     ready_list_add(susp);
@@ -143,7 +136,6 @@ int green_yield()
 
     running = next;
     swapcontext(susp -> context, next -> context);
-    sigprocmask(SIG_UNBLOCK, &block, NULL);
     return 0;
 }
 
@@ -155,10 +147,8 @@ int green_join(green_t *thread, void **res)
         // add as joining thread
         thread -> join = susp;
 
-        sigprocmask(SIG_BLOCK, &block, NULL);
         // select the next thread for execution
         green_t *next = ready_list_remove();
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
 
         running = next;
         swapcontext(susp -> context, next -> context);
@@ -215,9 +205,7 @@ void green_cond_signal(green_cond_t *condition)
         }
 
         green_thread -> next = NULL;
-        sigprocmask(SIG_BLOCK, &block, NULL);
         ready_list_add(green_thread);
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
 
     /*
@@ -234,42 +222,6 @@ void green_cond_signal(green_cond_t *condition)
     green_thread -> next = NULL;
     ready_list_add(green_thread);
     */
-}
-
-void timer_handler(int sig)
-{
-    green_t *susp = running;
-
-    // add the running to the ready queue
-    ready_list_add(susp);
-
-    // find the next thread for execution
-    green_t *next = ready_list_remove();
-
-    running = next;
-    swapcontext(susp -> context, next -> context);
-}
-
-static void init() __attribute__((constructor));
-
-void init()
-{
-    getcontext(&main_cntx);
-    sigemptyset(&block);
-    sigaddset(&block, SIGVTALRM);
-
-    struct sigaction act = {0};
-    struct timeval interval;
-    struct itimerval period;
-
-    act.sa_handler = timer_handler;
-    assert(sigaction(SIGVTALRM, &act, NULL) == 0);
-
-    interval.tv_sec = 0;
-    interval.tv_usec = PERIOD;
-    period.it_interval = interval;
-    period.it_value = interval;
-    setitimer(ITIMER_VIRTUAL, &period, NULL);
 }
 
 /*
