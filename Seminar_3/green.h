@@ -25,6 +25,8 @@ typedef struct green_mutex_t
 {
     volatile int taken;
     //handle the list
+    green_t *mutex_first;
+    green_t *mutex_last;
 }
 
 green_mutex_t;

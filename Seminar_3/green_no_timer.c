@@ -73,7 +73,7 @@ void complete_thread(green_t *thread)
     free(cntx);
 }
 
-void *green_thread()
+void green_thread()
 {
     green_t *this = running;
 
@@ -185,7 +185,9 @@ void green_cond_wait(green_cond_t *condition)
 
     condition -> suspend_last = to_suspend;
     to_suspend -> next = NULL;
-    green_yield();
+    // green_yield();
+    running = ready_list_remove();
+    swapcontext(to_suspend -> context, running -> context);
 }
 
 void green_cond_signal(green_cond_t *condition)

@@ -195,6 +195,7 @@ void green_cond_wait(green_cond_t *condition)
 
     condition -> suspend_last = to_suspend;
     to_suspend -> next = NULL;
+    // green_yield();
     sigprocmask(SIG_BLOCK, &block, NULL);
     running = ready_list_remove();
     swapcontext(to_suspend -> context, running -> context);
@@ -273,51 +274,6 @@ void init()
     period.it_interval = interval;
     period.it_value = interval;
     setitimer(ITIMER_VIRTUAL, &period, NULL);
-}
-
-int green_mutex_init(green_mutex_t *mutex)
-{
-    mutex -> taken = FALSE;
-    // initialize fields
-    mutex -> mutex_first = NULL;
-    mutex -> mutex_last = NULL;
-}
-
-int green_mutex_lock(green_mutex_t *mutex)
-{
-    // block timer interrupt
-
-    green_t *susp = running;
-    if (mutex -> taken)
-    {
-        // suspend the running thread
-
-        // find the next thread
-        running = next;
-        swapcontext(susp -> context, next -> context)
-    }
-    else
-    {
-        // take the lock
-    }
-    // unblock
-    return 0;
-}
-
-int green_mutext_unlock(green_mutex_t *mutex)
-{
-    // block timer interrupt
-
-    if (mutex -> susp != NULL)
-    {
-        // move suspended threads to ready queue
-    }
-    else
-    {
-        // release lock
-    }
-    // unlock
-    return 0;
 }
 
 /*
