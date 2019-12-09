@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <sys/time.h>
-#include "green_final_touch.h"
+#include "green.h"
 
 #define FALSE 0
 #define TRUE 1
@@ -185,91 +185,26 @@ void green_cond_init(green_cond_t *condition)
 }
 
 // suspend the thread and puts it in the last part of the suspend queue
-int green_cond_wait(green_cond_t *cond, green_mutex_t *mutex)
+void green_cond_wait(green_cond_t *condition)
 {
-    // block timer interrupt
-    sigprocmask(SIG_BLOCK, &block, NULL);
-
-    // suspend the running thread on condition
-    green_t *susp = running;
-    green_t *green_thread = cond -> suspend_last;
+    green_t *to_suspend = running;
+    green_t *green_thread = condition -> suspend_last;
 
     if (green_thread == NULL)
     {
-        cond -> suspend_first = susp;
+        condition -> suspend_first = to_suspend;
     }
     else
     {
-        cond-> suspend_last -> next = susp;
+        condition -> suspend_last -> next = to_suspend;
     }
-    
-    cond -> suspend_last = susp;
 
-    if(mutex != NULL)
-    {
-        // release the lock if we have a mutex
-        // mutex -> taken = FALSE;
-        if (mutex -> taken == TRUE)
-        {
-            mutex -> taken = FALSE;
-        }
-
-        // schedule suspended threads
-        green_t *green_thread = cond -> suspend_first;
-
-        while(green_thread != NULL)
-        {
-            if (green_thread -> next == NULL)
-            {
-                cond -> suspend_first = NULL;
-                cond -> suspend_last = NULL;
-            }
-            else
-            {
-                cond -> suspend_first = green_thread -> next;
-            }
-
-            green_thread -> next = NULL;
-            ready_list_add(green_thread);
-            green_thread = cond -> suspend_first;
-        }
-    }
-    // schedule the next thread
-    green_t *next = ready_list_remove();
-
-    running = next;
-    swapcontext(susp -> context, next -> context);
-
-    if(mutex != NULL)
-    {
-        // try to take the lock
-        if (mutex -> taken)
-        {
-            // bad luck, suspend
-            green_t *susp = running;
-            green_t *green_thread = cond -> suspend_last;
-
-            if (green_thread == NULL)
-            {
-                cond -> suspend_first = susp;
-            }
-            else
-            {
-                cond-> suspend_last -> next = susp;
-            }
-            
-            cond -> suspend_last = susp;
-        }
-        else
-        {
-            // take the lock
-            mutex -> taken = TRUE;
-        }
-    }
-    // unblock
+    condition -> suspend_last = to_suspend;
+    to_suspend -> next = NULL;
+    sigprocmask(SIG_BLOCK, &block, NULL);
+    running = ready_list_remove();
+    swapcontext(to_suspend -> context, running -> context);
     sigprocmask(SIG_UNBLOCK, &block, NULL);
-
-    return 0;
 }
 
 // move the first suspend queue to the ready queue
