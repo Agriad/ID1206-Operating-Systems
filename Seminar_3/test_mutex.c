@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "green.h"
 
 int counter = 0;
+green_mutex_t temp;
+green_mutex_t *mutex = &temp;
 
 void *test(void *arg)
 {
@@ -11,7 +14,9 @@ void *test(void *arg)
     {
         printf("thread %d: %d\n", i, loop);
         loop--;
+        green_mutex_lock(mutex);
         counter++;
+        green_mutex_unlock(mutex);
         if (loop % 100 == 0)
         {
             green_yield();
@@ -25,6 +30,7 @@ int main()
     green_t g0, g1;
     int a0 = 0;
     int a1 = 1;
+    green_mutex_init(mutex);
     green_create(&g0, test, &a0);
     green_create(&g1, test, &a1);
 
