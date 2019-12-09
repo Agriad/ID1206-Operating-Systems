@@ -12,7 +12,6 @@
 #define PERIOD 100
 
 static ucontext_t main_cntx = {0};
-//static green_t main_green = {&main_cntx, NULL, ... FALSE};
 static green_t main_green = {&main_cntx, NULL, NULL, NULL, NULL, NULL, FALSE};
 
 static green_t *running = &main_green;
@@ -21,6 +20,7 @@ static sigset_t block;
 
 void timer_handler(int);
 
+// pointers to handle ready list
 green_t *ready_first;
 green_t *ready_last;
 
@@ -73,6 +73,7 @@ void complete_thread(green_t *thread)
     free(cntx);
 }
 
+// almost closes the thread and signals any thread waiting for it to end
 void green_thread()
 {
     green_t *this = running;
@@ -104,6 +105,7 @@ void green_thread()
     setcontext(next -> context);
 }
 
+// creates a green thread for us to use
 int green_create(green_t *new, void *(*fun)(void*), void *arg)
 {
     ucontext_t *cntx = (ucontext_t *) malloc(sizeof(ucontext_t));
@@ -131,6 +133,7 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
     return 0;
 }
 
+// yields the cpu time for other threads to run instead
 int green_yield()
 {
     sigprocmask(SIG_BLOCK, &block, NULL);
@@ -147,6 +150,7 @@ int green_yield()
     return 0;
 }
 
+// checks if the thread it is waiting for is done and collect the value
 int green_join(green_t *thread, void **res)
 {
     if(!thread -> zombie)
@@ -173,12 +177,14 @@ int green_join(green_t *thread, void **res)
     return 0;
 }
 
+// initialize the green condition by pointing it to a green_cond_t struct
 void green_cond_init(green_cond_t *condition)
 {
-    green_cond_t *new_green_cond_t;
-    condition = new_green_cond_t;
+    green_cond_t new_green_cond_t;
+    condition = &new_green_cond_t;
 }
 
+// suspend the thread and puts it in the last part of the suspend queue
 void green_cond_wait(green_cond_t *condition)
 {
     green_t *to_suspend = running;
@@ -201,6 +207,7 @@ void green_cond_wait(green_cond_t *condition)
     sigprocmask(SIG_UNBLOCK, &block, NULL);
 }
 
+// move the first suspend queue to the ready queue
 void green_cond_signal(green_cond_t *condition)
 {
     green_t *green_thread = condition -> suspend_first;
@@ -222,23 +229,9 @@ void green_cond_signal(green_cond_t *condition)
         ready_list_add(green_thread);
         sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
-
-    /*
-    if (green_thread -> next == NULL)
-    {
-        condition -> suspend_first = NULL;
-        condition -> suspend_last = NULL;
-    }
-    else
-    {
-        condition -> suspend_first = green_thread -> next;
-    }
-
-    green_thread -> next = NULL;
-    ready_list_add(green_thread);
-    */
 }
 
+// handles the time
 void timer_handler(int sig)
 {
     green_t *susp = running;
@@ -275,6 +268,7 @@ void init()
     setitimer(ITIMER_VIRTUAL, &period, NULL);
 }
 
+// initializes the mutex by setting everything to false
 int green_mutex_init(green_mutex_t *mutex)
 {
     mutex -> taken = FALSE;
@@ -283,6 +277,8 @@ int green_mutex_init(green_mutex_t *mutex)
     mutex -> mutex_last = NULL;
 }
 
+// locks the mutex and if it is taken put thread to suspend
+// could have used cond maybe
 int green_mutex_lock(green_mutex_t *mutex)
 {
     // block timer interrupt
@@ -320,6 +316,7 @@ int green_mutex_lock(green_mutex_t *mutex)
     return 0;
 }
 
+// unlocks the mutex and releases suspended threads that are waiting for the lock
 int green_mutex_unlock(green_mutex_t *mutex)
 {
     // block timer interrupt
