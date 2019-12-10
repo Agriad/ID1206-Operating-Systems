@@ -279,6 +279,7 @@ void green_cond_signal(green_cond_t *condition)
 
     if (green_thread != NULL)
     {
+        sigprocmask(SIG_BLOCK, &block, NULL);
         if (green_thread -> next == NULL)
         {
             condition -> suspend_first = NULL;
@@ -290,7 +291,6 @@ void green_cond_signal(green_cond_t *condition)
         }
 
         green_thread -> next = NULL;
-        sigprocmask(SIG_BLOCK, &block, NULL);
         ready_list_add(green_thread);
         sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
