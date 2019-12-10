@@ -6,7 +6,7 @@ int counter = 0;
 void *test(void *arg)
 {
     int i = *(int*)arg;
-    int loop = 1000000;
+    int loop = 100000;
     while (loop > 0)
     {
         printf("thread %d: %d\n", i, loop);

@@ -76,6 +76,7 @@ void complete_thread(green_t *thread)
 // almost closes the thread and signals any thread waiting for it to end
 void green_thread()
 {
+    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *this = running;
 
     // segmentation fault
@@ -85,9 +86,7 @@ void green_thread()
     // we use join as a a storage to see who is waiting for us
     if (this -> join != NULL)
     {
-        sigprocmask(SIG_BLOCK, &block, NULL);
         ready_list_add(this -> join);
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
 
     // save result of execution
@@ -97,17 +96,17 @@ void green_thread()
     this -> zombie = TRUE;
 
     // find the next thread to run
-    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *next  = ready_list_remove();
-    sigprocmask(SIG_UNBLOCK, &block, NULL);
 
     running = next;
     setcontext(next -> context);
+    sigprocmask(SIG_UNBLOCK, &block, NULL);
 }
 
 // creates a green thread for us to use
 int green_create(green_t *new, void *(*fun)(void*), void *arg)
 {
+    sigprocmask(SIG_BLOCK, &block, NULL);
     ucontext_t *cntx = (ucontext_t *) malloc(sizeof(ucontext_t));
     getcontext(cntx);
 
@@ -126,7 +125,6 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
     new -> zombie = FALSE;
 
     // add new to the ready queue
-    sigprocmask(SIG_BLOCK, &block, NULL);
     ready_list_add(new);
     sigprocmask(SIG_UNBLOCK, &block, NULL);
 
@@ -153,16 +151,15 @@ int green_yield()
 // checks if the thread it is waiting for is done and collect the value
 int green_join(green_t *thread, void **res)
 {
+    sigprocmask(SIG_BLOCK, &block, NULL);
     if(!thread -> zombie)
     {
         green_t *susp = running;
         // add as joining thread
         thread -> join = susp;
 
-        sigprocmask(SIG_BLOCK, &block, NULL);
         // select the next thread for execution
         green_t *next = ready_list_remove();
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
 
         running = next;
         swapcontext(susp -> context, next -> context);
@@ -174,6 +171,7 @@ int green_join(green_t *thread, void **res)
     // free context
     complete_thread(thread);
 
+    sigprocmask(SIG_UNBLOCK, &block, NULL);
     return 0;
 }
 
@@ -279,7 +277,6 @@ void green_cond_signal(green_cond_t *condition)
 
     if (green_thread != NULL)
     {
-        sigprocmask(SIG_BLOCK, &block, NULL);
         if (green_thread -> next == NULL)
         {
             condition -> suspend_first = NULL;
@@ -292,7 +289,6 @@ void green_cond_signal(green_cond_t *condition)
 
         green_thread -> next = NULL;
         ready_list_add(green_thread);
-        sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
 }
 

@@ -77,7 +77,6 @@ void complete_thread(green_t *thread)
 
 void green_thread()
 {
-    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *this = running;
 
     void *result = (*this -> fun)(this -> arg);
@@ -86,7 +85,9 @@ void green_thread()
     // we use join as a a storage to see who is waiting for us
     if (this -> join != NULL)
     {
+        sigprocmask(SIG_BLOCK, &block, NULL);
         ready_list_add(this -> join);
+        sigprocmask(SIG_UNBLOCK, &block, NULL);
     }
 
     // save result of execution
@@ -96,6 +97,7 @@ void green_thread()
     this -> zombie = TRUE;
 
     // find the next thread to run
+    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *next  = ready_list_remove();
 
     running = next;
@@ -105,7 +107,6 @@ void green_thread()
 
 int green_create(green_t *new, void *(*fun)(void*), void *arg)
 {
-    sigprocmask(SIG_BLOCK, &block, NULL);
     ucontext_t *cntx = (ucontext_t *) malloc(sizeof(ucontext_t));
     getcontext(cntx);
 
@@ -124,6 +125,7 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
     new -> zombie = FALSE;
 
     // add new to the ready queue
+    sigprocmask(SIG_BLOCK, &block, NULL);
     ready_list_add(new);
     sigprocmask(SIG_UNBLOCK, &block, NULL);
     return 0;
@@ -131,9 +133,9 @@ int green_create(green_t *new, void *(*fun)(void*), void *arg)
 
 int green_yield()
 {
-    sigprocmask(SIG_BLOCK, &block, NULL);
     green_t *susp = running;
     // add susp to ready queue
+    sigprocmask(SIG_BLOCK, &block, NULL);
     ready_list_add(susp);
 
     // select the next thread for execution
@@ -201,15 +203,6 @@ void green_cond_wait(green_cond_t *condition)
 
 void green_cond_signal(green_cond_t *condition)
 {
-    if (running != NULL)
-    {
-        printf("%p accessed signal\n", running -> context);
-    }
-    else
-    {
-        printf("NULL accessed signal\n");
-    }
-    checker();
     green_t *green_thread = condition -> suspend_first;
 
     if (green_thread != NULL)
