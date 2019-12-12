@@ -9,7 +9,7 @@ green_mutex_t *mutex = &temp;
 void *test(void *arg)
 {
     int id = *(int*)arg;
-    int loop = 10000;
+    int loop = 10;
     while (loop > 0)
     {
         green_mutex_lock(mutex);
@@ -17,6 +17,7 @@ void *test(void *arg)
         {
             printf("while\n");
             green_mutex_unlock(mutex);
+            green_yield();
             green_cond_wait(&cond);
         }
         printf("thread %d: %d\n", id, loop);

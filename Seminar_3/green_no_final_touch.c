@@ -101,7 +101,7 @@ void green_thread()
 
     running = next;
     setcontext(next -> context);
-    sigprocmask(SIG_BLOCK, &block, NULL);
+    sigprocmask(SIG_UNBLOCK, &block, NULL);
 }
 
 // creates a green thread for us to use

@@ -18,6 +18,9 @@ void *test(void *arg)
         {
             printf("thread %d: %d\n", id, loop);
             loop--;
+            green_mutex_lock(mutex);
+            counter++;
+            green_mutex_unlock(mutex);
             flag = (id + 1) % 2;
             green_cond_signal(&cond);
         }

@@ -9,7 +9,7 @@
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "${fileDirname}/green_timer_no_mutex.c"
+                "${fileDirname}/green_no_final_touch.c"
             ],
             "options": {
                 "cwd": "/usr/bin"

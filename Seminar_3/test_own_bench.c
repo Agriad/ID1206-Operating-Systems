@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "green_final_touch.h"
+#include <time.h>
 
 int flag = 0;
 green_cond_t cond;
@@ -30,6 +31,7 @@ void *test(void *arg)
 
 int main()
 {
+    clock_t start_clock = clock();
     //green_t g0, g1, g2;
     green_t g0, g1, g2, g3, g4, g5, g6, g7, g8, g9;
     int a0 = 0;
@@ -68,5 +70,10 @@ int main()
 
     printf("counter: %d\n", counter);
     printf("done\n");
+    clock_t final_time = clock() - start_clock;
+    double final_time_read = (double) final_time / CLOCKS_PER_SEC;
+    printf("time: %ld\n", final_time);
+    printf("time seconds %lf\n", final_time_read);
+
     return 0;
 }
